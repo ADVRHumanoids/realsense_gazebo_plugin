@@ -2,6 +2,11 @@
 #include <sensor_msgs/fill_image.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
+//For HACK
+#include <pcl_ros/point_cloud.h>
+#include <pcl_ros/transforms.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 namespace {
 std::string extractCameraName(const std::string &name);
 sensor_msgs::CameraInfo cameraInfo(const sensor_msgs::Image &image,
@@ -188,7 +193,19 @@ bool GazeboRosRealsense::FillPointCloudHelper(sensor_msgs::PointCloud2 &point_cl
   point_cloud_msg.height = rows_arg;
   point_cloud_msg.width = cols_arg;
   point_cloud_msg.row_step = point_cloud_msg.point_step * point_cloud_msg.width;
+  
+  //HACK point cloud is shifted Idk why... so we move it to correct
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud =
+    boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
+    pcl::fromROSMsg(point_cloud_msg, *cloud);
+    
+    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+    transform(0,3) = 0.015;
+    pcl::transformPointCloud (*cloud, *cloud, transform);
+    
+    pcl::toROSMsg(*cloud, point_cloud_msg);
 
+  
   return true;
 }
 

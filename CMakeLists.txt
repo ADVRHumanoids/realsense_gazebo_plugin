@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
     image_transport
     camera_info_manager
     sensor_msgs
+    pcl_ros
+    pcl_conversions
 )
 find_package(gazebo REQUIRED)
 
