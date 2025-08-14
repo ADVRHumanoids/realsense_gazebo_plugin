@@ -6,6 +6,8 @@ namespace {
 std::string extractCameraName(const std::string &name);
 sensor_msgs::CameraInfo cameraInfo(const sensor_msgs::Image &image,
                                    float horizontal_fov);
+sensor_msgs::CameraInfo cameraInfo(const sensor_msgs::Image &image,
+                                   const gazebo::rendering::CameraPtr cam);
 }
 
 namespace gazebo {
@@ -95,7 +97,7 @@ void GazeboRosRealsense::OnNewFrame(const rendering::CameraPtr cam,
 
   // publish to ROS
   auto camera_info_msg =
-      cameraInfo(this->image_msg_, cameras.at(camera_id)->HFOV().Radian());
+      cameraInfo(this->image_msg_, cameras.at(camera_id));
   image_pub->publish(this->image_msg_, camera_info_msg);
 }
 
@@ -215,7 +217,7 @@ void GazeboRosRealsense::OnNewDepthFrame() {
 
   // publish to ROS
   auto depth_info_msg =
-      cameraInfo(this->depth_msg_, this->depthCam->HFOV().Radian());
+      cameraInfo(this->depth_msg_, this->depthCam);
   this->depth_pub_.publish(this->depth_msg_, depth_info_msg);
 
   if (pointCloud_ && this->pointcloud_pub_.getNumSubscribers() > 0)
@@ -244,6 +246,46 @@ std::string extractCameraName(const std::string &name) {
 
   ROS_ERROR("Unknown camera name");
   return COLOR_CAMERA_NAME;
+}
+
+sensor_msgs::CameraInfo cameraInfo(const sensor_msgs::Image &image,
+                                   const gazebo::rendering::CameraPtr cam) {
+  sensor_msgs::CameraInfo info_msg;
+
+  info_msg.header = image.header;
+  info_msg.height = cam->ImageHeight();
+  info_msg.width = cam->ImageWidth();
+
+  info_msg.K[0] = cam->ImageFocalLengthX();
+  info_msg.K[4] = cam->ImageFocalLengthY();
+  info_msg.K[2] = cam->ImageOpticalCenterX();
+  info_msg.K[5] = cam->ImageOpticalCenterY();
+  info_msg.K[8] = 1.;
+
+  if (cam->LensDistortion() != nullptr) {
+    info_msg.distortion_model = "plumb_bob";
+    info_msg.D.push_back(cam->LensDistortion()->K1());
+    info_msg.D.push_back(cam->LensDistortion()->K2());
+    info_msg.D.push_back(cam->LensDistortion()->P1());
+    info_msg.D.push_back(cam->LensDistortion()->P2());
+    info_msg.D.push_back(cam->LensDistortion()->K3());
+  } else {
+    info_msg.D = {0, 0, 0, 0, 0};  
+  }
+
+  info_msg.R[0] = 1.0;
+  info_msg.R[4] = 1.0; 
+  info_msg.R[8] = 1.0;
+
+  info_msg.P[0] = info_msg.K[0];
+  info_msg.P[5] = info_msg.K[4];
+  info_msg.P[2] = info_msg.K[2];
+  info_msg.P[6] = info_msg.K[5];
+  info_msg.P[10] = info_msg.K[8];
+
+  //    info_msg.roi.do_rectify = true;
+
+  return info_msg;
 }
 
 sensor_msgs::CameraInfo cameraInfo(const sensor_msgs::Image &image,

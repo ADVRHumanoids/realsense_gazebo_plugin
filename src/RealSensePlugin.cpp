@@ -117,7 +117,7 @@ void RealSensePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
     else if (name == "robotNamespace")
       break;
     else
-      throw std::runtime_error("Ivalid parameter for ReakSensePlugin");
+      throw std::runtime_error("Invalid parameter for RealSensePlugin");
 
     _sdf = _sdf->GetNextElement();
   } while (_sdf);
