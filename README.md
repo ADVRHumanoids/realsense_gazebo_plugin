@@ -3,8 +3,10 @@
 This package is a Gazebo ROS plugin for the Intel D435 realsense camera.
 
 ## Note
+
+**WIP: changing for gazebo harmonic support. I will let you know when the its complete.**
 This branch is aimed for ROS2, if you are ROS1 user you can see the other branches(e.g melodic)
- 
+
 ## Acknowledgement
 
 This is a continuation of work done by [SyrianSpock](https://github.com/SyrianSpock) for a Gazebo ROS plugin with RS200 camera.
@@ -13,8 +15,8 @@ This package also includes the work developed by Intel Corporation with the ROS 
 
 ## Example usage with a custom robot
 
-Note that this was tested for the ROS2 branch with ROS Foxy distro. A turtlebot3 like custom robot model was used. 
-In custom robot's `model.sdf`, we should attach the link, sensors, joint  and plugin block as following; 
+Note that this was tested for the ROS2 branch with ROS Foxy distro. A turtlebot3 like custom robot model was used.
+In custom robot's `model.sdf`, we should attach the link, sensors, joint  and plugin block as following;
 
 ```xml
     <link name="realsense_link">
@@ -168,8 +170,8 @@ In custom robot's `model.sdf`, we should attach the link, sensors, joint  and pl
     </plugin>
 ```
 
-Finally we should define the joint, links of each camera(color, depth, ir_right, ir_left) W.R.T robot body, 
-In URDF(usually in `xxx_description` package) of the robot add following; 
+Finally we should define the joint, links of each camera(color, depth, ir_right, ir_left) W.R.T robot body,
+In URDF(usually in `xxx_description` package) of the robot add following;
 
 ```xml
   <link name="camera_bottom_screw_frame">
