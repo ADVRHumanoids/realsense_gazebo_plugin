@@ -17,9 +17,9 @@
 #include <memory>
 #include <string>
 
-#include <camera_info_manager/camera_info_manager.hpp>
-#include <image_transport/image_transport.hpp>
-#include <point_cloud_transport/point_cloud_transport.hpp>
+// #include <camera_info_manager/camera_info_manager.hpp>  // TODO: Re-enable when camera_info_manager is available
+// #include <image_transport/image_transport.hpp>  // TODO: Re-enable when image_transport is available
+// #include <point_cloud_transport/point_cloud_transport.hpp>  // TODO: Re-enable when point_cloud_transport is available
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -27,7 +27,9 @@
 
 #include "realsense_gazebo_plugin/RealSensePlugin.hpp"
 
-namespace gazebo
+namespace gz
+{
+namespace realsense_gazebo_plugin
 {
 /// \brief A plugin that simulates Real Sense camera streams.
 class GazeboRosRealsense : public RealSensePlugin
@@ -45,7 +47,10 @@ public:
   // Documentation Inherited.
 
 public:
-  virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
+  void Configure(const gz::sim::Entity &_entity,
+                 const std::shared_ptr<const sdf::Element> &_sdf,
+                 gz::sim::EntityComponentManager &_ecm,
+                 gz::sim::EventManager &_eventMgr) override;
 
   /// \brief Callback that publishes a received Depth Camera Frame as an
   /// ImageStamped message.
@@ -64,12 +69,12 @@ public:
 
 public:
   virtual void OnNewFrame(
-    const rendering::CameraPtr cam,
-    const transport::PublisherPtr pub);
+    const gz::rendering::CameraPtr cam,
+    gz::transport::Node::Publisher pub) override;
 
-protected:
-  boost::shared_ptr<camera_info_manager::CameraInfoManager>
-  camera_info_manager_;
+// protected:
+  // boost::shared_ptr<camera_info_manager::CameraInfoManager>
+  // camera_info_manager_;  // TODO: Re-enable when camera_info_manager is available
 
   /// \brief A pointer to the ROS node.
   ///  A node will be instantiated if it does not exist.
@@ -77,12 +82,12 @@ protected:
 protected:
   rclcpp::Node::SharedPtr node_;
 
-private:
-  std::unique_ptr<point_cloud_transport::PointCloudTransport> pctnode_;
+// private:
+  // std::unique_ptr<point_cloud_transport::PointCloudTransport> pctnode_;  // TODO: Re-enable when point_cloud_transport is available
 
-protected:
-  image_transport::CameraPublisher color_pub_, ir1_pub_, ir2_pub_, depth_pub_;
-  point_cloud_transport::Publisher pointcloud_pub_;
+// protected:
+  // image_transport::CameraPublisher color_pub_, ir1_pub_, ir2_pub_, depth_pub_;  // TODO: Re-enable when image_transport is available
+  // point_cloud_transport::Publisher pointcloud_pub_;  // TODO: Re-enable when point_cloud_transport is available
 
   /// \brief ROS image messages
 
@@ -90,4 +95,5 @@ protected:
   sensor_msgs::msg::Image image_msg_, depth_msg_;
   sensor_msgs::msg::PointCloud2 pointcloud_msg_;
 };
-}  // namespace gazebo
+}  // namespace realsense_gazebo_plugin
+}  // namespace gz

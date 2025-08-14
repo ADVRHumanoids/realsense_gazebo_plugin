@@ -19,15 +19,22 @@
 #include <vector>
 #include <map>
 
-#include <gazebo/common/Plugin.hh>
-#include <gazebo/common/common.hh>
-#include <gazebo/physics/PhysicsTypes.hh>
-#include <gazebo/physics/physics.hh>
-#include <gazebo/rendering/DepthCamera.hh>
-#include <gazebo/sensors/sensors.hh>
+#include <gz/sim/System.hh>
+#include <gz/sim/Entity.hh>
+#include <gz/sim/EntityComponentManager.hh>
+#include <gz/sim/EventManager.hh>
+#include <gz/sim/components.hh>
+#include <gz/rendering/Camera.hh>
+#include <gz/rendering/DepthCamera.hh>
+#include <gz/sensors/CameraSensor.hh>
+#include <gz/sensors/DepthCameraSensor.hh>
+#include <gz/transport/Node.hh>
+#include <gz/msgs.hh>
 #include <sdf/sdf.hh>
 
-namespace gazebo
+namespace gz
+{
+namespace realsense_gazebo_plugin
 {
 #define DEPTH_CAMERA_NAME "depth"
 #define COLOR_CAMERA_NAME "color"
@@ -46,7 +53,9 @@ struct CameraParams
 };
 
 /// \brief A plugin that simulates Real Sense camera streams.
-class RealSensePlugin : public ModelPlugin
+class RealSensePlugin : public gz::sim::System,
+                        public gz::sim::ISystemConfigure,
+                        public gz::sim::ISystemPostUpdate
 {
   /// \brief Constructor.
 
@@ -57,10 +66,14 @@ public:
   ~RealSensePlugin();
 
   // Documentation Inherited.
-  virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
+  void Configure(const gz::sim::Entity &_entity,
+                 const std::shared_ptr<const sdf::Element> &_sdf,
+                 gz::sim::EntityComponentManager &_ecm,
+                 gz::sim::EventManager &_eventMgr) override;
 
-  /// \brief Callback for the World Update event.
-  void OnUpdate();
+  // Documentation Inherited.
+  void PostUpdate(const gz::sim::UpdateInfo &_info,
+                  const gz::sim::EntityComponentManager &_ecm) override;
 
   /// \brief Callback that publishes a received Depth Camera Frame as an
   /// ImageStamped
@@ -70,63 +83,51 @@ public:
   /// \brief Callback that publishes a received Camera Frame as an
   /// ImageStamped message.
   virtual void OnNewFrame(
-    const rendering::CameraPtr cam,
-    const transport::PublisherPtr pub);
+    const gz::rendering::CameraPtr cam,
+    gz::transport::Node::Publisher pub);
 
 protected:
-  /// \brief Pointer to the model containing the plugin.
-  physics::ModelPtr rsModel;
+  /// \brief Entity of the model containing the plugin.
+  gz::sim::Entity modelEntity;
 
-  /// \brief Pointer to the world.
-  physics::WorldPtr world;
+  /// \brief Pointer to the ECM.
+  gz::sim::EntityComponentManager *ecm;
 
   /// \brief Pointer to the Depth Camera Renderer.
-  rendering::DepthCameraPtr depthCam;
+  gz::rendering::DepthCameraPtr depthCam;
 
   /// \brief Pointer to the Color Camera Renderer.
-  rendering::CameraPtr colorCam;
+  gz::rendering::CameraPtr colorCam;
 
   /// \brief Pointer to the Infrared Camera Renderer.
-  rendering::CameraPtr ired1Cam;
+  gz::rendering::CameraPtr ired1Cam;
 
   /// \brief Pointer to the Infrared2 Camera Renderer.
-  rendering::CameraPtr ired2Cam;
+  gz::rendering::CameraPtr ired2Cam;
 
   /// \brief String to hold the camera prefix
   std::string prefix;
 
   /// \brief Pointer to the transport Node.
-  transport::NodePtr transportNode;
+  gz::transport::Node node;
 
   // \brief Store Real Sense depth map data.
   std::vector<uint16_t> depthMap;
 
   /// \brief Pointer to the Depth Publisher.
-  transport::PublisherPtr depthPub;
+  gz::transport::Node::Publisher depthPub;
 
   /// \brief Pointer to the Color Publisher.
-  transport::PublisherPtr colorPub;
+  gz::transport::Node::Publisher colorPub;
 
   /// \brief Pointer to the Infrared Publisher.
-  transport::PublisherPtr ired1Pub;
+  gz::transport::Node::Publisher ired1Pub;
 
   /// \brief Pointer to the Infrared2 Publisher.
-  transport::PublisherPtr ired2Pub;
+  gz::transport::Node::Publisher ired2Pub;
 
-  /// \brief Pointer to the Depth Camera callback connection.
-  event::ConnectionPtr newDepthFrameConn;
-
-  /// \brief Pointer to the Depth Camera callback connection.
-  event::ConnectionPtr newIred1FrameConn;
-
-  /// \brief Pointer to the Infrared Camera callback connection.
-  event::ConnectionPtr newIred2FrameConn;
-
-  /// \brief Pointer to the Color Camera callback connection.
-  event::ConnectionPtr newColorFrameConn;
-
-  /// \brief Pointer to the World Update event connection.
-  event::ConnectionPtr updateConnection;
+  /// \brief Sensor entities.
+  gz::sim::Entity depthEntity, colorEntity, ired1Entity, ired2Entity;
 
   std::map<std::string, CameraParams> cameraParamsMap_;
 
@@ -141,4 +142,5 @@ protected:
   float rangeMinDepth_;
   float rangeMaxDepth_;
 };
-}  // namespace gazebo
+}  // namespace realsense_gazebo_plugin
+}  // namespace gz

@@ -15,33 +15,27 @@ set(FastRTPS_INCLUDE_DIR /opt/ros/foxy/include)
 set(FastRTPS_LIBRARY_RELEASE /opt/ros/foxy/lib/libfastrtps.so)
 # Load catkin and all dependencies required for this package
 find_package(ament_cmake REQUIRED)
+
+# Core GZ packages for the plugin
+find_package(gz-sim8 REQUIRED)
+find_package(gz-transport13 REQUIRED)
+find_package(gz-msgs10 REQUIRED)
+find_package(gz-rendering8 REQUIRED)
+find_package(gz-sensors8 REQUIRED)
+
+# Basic ROS packages that should be available
 find_package(rclcpp REQUIRED)
-find_package(gazebo_ros REQUIRED)
-find_package(image_transport REQUIRED)
-find_package(point_cloud_transport REQUIRED)
-find_package(camera_info_manager REQUIRED)
 find_package(sensor_msgs REQUIRED)
-
-find_package(gazebo REQUIRED)
-
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
 set( dependencies
     rclcpp
-    gazebo_ros
-    image_transport
-    point_cloud_transport
-    camera_info_manager
     sensor_msgs
 )
 
 include_directories(
     SYSTEM
     include
-    ${GAZEBO_INCLUDE_DIRS}
 )
-
-link_directories(${GAZEBO_LIBRARY_DIRS})
 
 add_library(
     ${PROJECT_NAME} SHARED
@@ -50,7 +44,13 @@ add_library(
 )
 
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})
-target_link_libraries(${PROJECT_NAME} ${GAZEBO_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}
+    gz-sim8::gz-sim8
+    gz-transport13::gz-transport13
+    gz-msgs10::gz-msgs10
+    gz-rendering8::gz-rendering8
+    gz-sensors8::gz-sensors8
+)
 
 install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION lib
