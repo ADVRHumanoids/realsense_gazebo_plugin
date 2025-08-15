@@ -14,7 +14,7 @@
 
 #include "realsense_gazebo_plugin/gazebo_ros_realsense.hpp"
 // #include <sensor_msgs/fill_image.hpp>  // TODO: Re-enable when available
-// #include <sensor_msgs/image_encodings.hpp>  // TODO: Re-enable when available  
+// #include <sensor_msgs/image_encodings.hpp>  // TODO: Re-enable when available
 // #include <sensor_msgs/point_cloud2_iterator.hpp>  // TODO: Re-enable when available
 
 // TODO: Re-enable when dependencies are available
@@ -28,7 +28,7 @@
 
 namespace gz
 {
-namespace realsense_gazebo_plugin  
+namespace realsense_gazebo_plugin
 {
 
 GazeboRosRealsense::GazeboRosRealsense() {}
@@ -46,21 +46,17 @@ void GazeboRosRealsense::Configure(const gz::sim::Entity &_entity,
                                    gz::sim::EventManager &_eventMgr)
 {
   RealSensePlugin::Configure(_entity, _sdf, _ecm, _eventMgr);
-  std::string node_name = "gazebo_realsense";
-  node_name += this->prefix.empty() ? "" : "_" + this->prefix;
-  this->node_ = rclcpp::Node::make_shared(node_name);
 
   // Make sure the ROS node for Gazebo has already been initialized
   if (!rclcpp::ok()) {
-    RCLCPP_ERROR(
-      node_->get_logger(),
-      "A ROS node for Gazebo has not been initialized, unable "
-      "to load plugin. "
-      "Load the Gazebo system plugin "
-      "'libgazebo_ros_api_plugin.so' in the gazebo_ros "
-      "package");
-    return;
+    // Initialize ROS2 if not already initialized
+    std::cerr << "ROS2 not initialized, initializing now..." << std::endl;
+    rclcpp::init(0, nullptr);
   }
+
+  std::string node_name = "gazebo_realsense";
+  node_name += this->prefix.empty() ? "" : "_" + this->prefix;
+  this->node_ = rclcpp::Node::make_shared(node_name);
   RCLCPP_INFO(node_->get_logger(), "Realsense Gazebo ROS plugin loading.");
 
   // TODO: Re-enable when camera_info_manager is available
@@ -93,7 +89,7 @@ void GazeboRosRealsense::PostUpdate(const gz::sim::UpdateInfo &_info,
 {
   // Call parent PostUpdate first
   RealSensePlugin::PostUpdate(_info, _ecm);
-  
+
   // For now, the image processing is triggered by sensor callbacks
   // In a full implementation, we would process sensor data here
   // and publish ROS messages at the appropriate rate
@@ -109,25 +105,25 @@ void GazeboRosRealsense::OnNewFrame(
 
   // Create ROS image message
   auto imageMsg = std::make_unique<sensor_msgs::msg::Image>();
-  
+
   // Set header info
   imageMsg->header.stamp = this->node_->now();
-  
+
   // Set image dimensions
   imageMsg->width = cam->ImageWidth();
   imageMsg->height = cam->ImageHeight();
-  
+
   // Get image data using new API
   gz::rendering::Image image = cam->CreateImage();
   cam->Copy(image);
-  
+
   // Set image format and data based on camera type
   if (cam->ImageFormat() == gz::rendering::PF_R8G8B8) {
     imageMsg->encoding = "rgb8";
     imageMsg->step = cam->ImageWidth() * 3;
     imageMsg->data.resize(imageMsg->step * imageMsg->height);
     std::memcpy(imageMsg->data.data(), image.Data<unsigned char>(), image.MemorySize());
-    
+
     // Publish color image
     if (cam == this->colorCam) {
       imageMsg->header.frame_id = cameraParamsMap_[COLOR_CAMERA_NAME].optical_frame;
@@ -138,7 +134,7 @@ void GazeboRosRealsense::OnNewFrame(
     imageMsg->step = cam->ImageWidth() * 1;
     imageMsg->data.resize(imageMsg->step * imageMsg->height);
     std::memcpy(imageMsg->data.data(), image.Data<unsigned char>(), image.MemorySize());
-    
+
     // Publish infrared images
     if (cam == this->ired1Cam) {
       imageMsg->header.frame_id = cameraParamsMap_[IRED1_CAMERA_NAME].optical_frame;

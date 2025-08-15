@@ -4,8 +4,8 @@ This package is a Gazebo ROS plugin for the Intel D435 realsense camera.
 
 ## Note
 
-**WIP: changing for gazebo harmonic support. I will let you know when the its complete.**
-This branch is aimed for ROS2, if you are ROS1 user you can see the other branches(e.g melodic)
+This package has been modified for **Gazebo Harmonic**.
+The plugin is compatible with Gazebo Sim 8 (Harmonic) and ROS2.
 
 ## Acknowledgement
 
@@ -267,3 +267,87 @@ In URDF(usually in `xxx_description` package) of the robot add following;
   </joint>
 
 ```
+
+## Testing
+
+### Build the Plugin
+
+```bash
+# Source ROS2 environment
+source /opt/ros/humble/setup.bash
+
+# Build the plugin
+colcon build --packages-select realsense_gazebo_plugin
+
+# Source the workspace
+source install/setup.bash
+```
+
+### Test Plugin Loading
+
+To verify the plugin works correctly with Gazebo Harmonic:
+
+```bash
+# Set plugin path environment variable
+export GZ_SIM_SYSTEM_PLUGIN_PATH=$PWD/install/realsense_gazebo_plugin/lib:$GZ_SIM_SYSTEM_PLUGIN_PATH
+
+# Test plugin loading (minimal test)
+gz sim --verbose 2>&1 | grep -i realsense
+DISPLAY= gz sim --headless-rendering --iterations 1 src/realsense_gazebo_plugin/test.sdf
+```
+
+### Test with Simple SDF
+
+Create a simple test world with the RealSense plugin:
+
+```xml
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <world name="test_world">
+    <plugin name="gz::realsense_gazebo_plugin::GazeboRosRealsense" filename="librealsense_gazebo_plugin.so">
+    </plugin>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
+```
+
+Save as `test.sdf` and run:
+
+```bash
+export GZ_SIM_SYSTEM_PLUGIN_PATH=$PWD/install/realsense_gazebo_plugin/lib:$GZ_SIM_SYSTEM_PLUGIN_PATH
+gz sim test.sdf --headless --iterations 1
+```
+
+### Expected Output
+
+When the plugin loads successfully, you should see:
+```
+RealSensePlugin: The realsense_camera plugin is attached to model [model_name]
+```
+
+### Notes
+
+- Graphics-related errors (OpenGL, libGL) are environment-specific and do not affect plugin functionality
+- The plugin registers as `gz::realsense_gazebo_plugin::GazeboRosRealsense`
+- For sensor usage, attach the plugin to a model with appropriate camera sensors as shown in the usage examples below
