@@ -63,24 +63,18 @@ void GazeboRosRealsense::Configure(const gz::sim::Entity &_entity,
   }
   RCLCPP_INFO(node_->get_logger(), "Realsense Gazebo ROS plugin loading.");
 
-  // TODO: Re-enable when dependencies are available
+  // TODO: Re-enable when camera_info_manager is available
   // initialize camera_info_manager
   // this->camera_info_manager_.reset(
   //   new camera_info_manager::CameraInfoManager(
   //     this->node_.get(), this->GetHandle()));
 
-  // this->color_pub_ = image_transport::create_camera_publisher(
-  //   this->node_.get(), prefix + std::string("/") +
-  //   cameraParamsMap_[COLOR_CAMERA_NAME].topic_name, rmw_qos_profile_sensor_data);
-  // this->ir1_pub_ = image_transport::create_camera_publisher(
-  //   this->node_.get(), prefix + std::string("/") +
-  //   cameraParamsMap_[IRED1_CAMERA_NAME].topic_name, rmw_qos_profile_sensor_data);
-  // this->ir2_pub_ = image_transport::create_camera_publisher(
-  //   this->node_.get(), prefix + std::string("/") +
-  //   cameraParamsMap_[IRED2_CAMERA_NAME].topic_name, rmw_qos_profile_sensor_data);
-  // this->depth_pub_ = image_transport::create_camera_publisher(
-  //   this->node_.get(), prefix + std::string("/") +
-  //   cameraParamsMap_[DEPTH_CAMERA_NAME].topic_name, rmw_qos_profile_sensor_data);
+  // Create image transport publishers
+  image_transport::ImageTransport it(this->node_);
+  this->color_pub_ = it.advertise(prefix + "/" + cameraParamsMap_[COLOR_CAMERA_NAME].topic_name, 1);
+  this->ir1_pub_ = it.advertise(prefix + "/" + cameraParamsMap_[IRED1_CAMERA_NAME].topic_name, 1);
+  this->ir2_pub_ = it.advertise(prefix + "/" + cameraParamsMap_[IRED2_CAMERA_NAME].topic_name, 1);
+  this->depth_pub_ = it.advertise(prefix + "/" + cameraParamsMap_[DEPTH_CAMERA_NAME].topic_name, 1);
 
   // TODO: Re-enable when point_cloud_transport is available
   // if (pointCloud_) {
@@ -94,8 +88,8 @@ void GazeboRosRealsense::Configure(const gz::sim::Entity &_entity,
 }
 
 void GazeboRosRealsense::OnNewFrame(
-  const gz::rendering::CameraPtr cam,
-  gz::transport::Node::Publisher pub)
+  const gz::rendering::CameraPtr /*cam*/,
+  gz::transport::Node::Publisher /*pub*/)
 {
   // TODO: This method needs significant rework for gz-sim
   // The ROS integration would need to be completely reimplemented
@@ -106,15 +100,10 @@ void GazeboRosRealsense::OnNewFrame(
 // https://github.com/ros-simulation/gazebo_ros_pkgs/blob/kinetic-devel/gazebo_plugins/src/gazebo_ros_openni_kinect.cpp#L302
 // Fill depth information
 bool GazeboRosRealsense::FillPointCloudHelper(
-  sensor_msgs::msg::PointCloud2 & point_cloud_msg, uint32_t rows_arg,
-  uint32_t cols_arg, uint32_t step_arg, const void * data_arg)
+  sensor_msgs::msg::PointCloud2 & /*point_cloud_msg*/, uint32_t /*rows_arg*/,
+  uint32_t /*cols_arg*/, uint32_t /*step_arg*/, const void * /*data_arg*/)
 {
   // TODO: Re-enable when point_cloud_transport and related dependencies are available
-  (void)point_cloud_msg;
-  (void)rows_arg;
-  (void)cols_arg;
-  (void)step_arg;
-  (void)data_arg;
   return true;
 }
 
@@ -127,7 +116,9 @@ void GazeboRosRealsense::OnNewDepthFrame()
 }  // namespace realsense_gazebo_plugin
 }  // namespace gz
 
-// TODO: Fix plugin registration for gz-sim8
-// Register the plugin  
-// GZ_REGISTER_SYSTEM_PLUGIN(gz::realsense_gazebo_plugin::GazeboRosRealsense)
+// Register the plugin using GZ_ADD_PLUGIN
+GZ_ADD_PLUGIN(gz::realsense_gazebo_plugin::GazeboRosRealsense,
+              gz::sim::System,
+              gz::sim::ISystemConfigure,
+              gz::sim::ISystemPostUpdate)
 

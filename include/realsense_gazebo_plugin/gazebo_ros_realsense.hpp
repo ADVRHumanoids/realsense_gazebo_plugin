@@ -18,7 +18,7 @@
 #include <string>
 
 // #include <camera_info_manager/camera_info_manager.hpp>  // TODO: Re-enable when camera_info_manager is available
-// #include <image_transport/image_transport.hpp>  // TODO: Re-enable when image_transport is available
+#include <image_transport/image_transport.hpp>
 // #include <point_cloud_transport/point_cloud_transport.hpp>  // TODO: Re-enable when point_cloud_transport is available
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
@@ -26,6 +26,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include "realsense_gazebo_plugin/RealSensePlugin.hpp"
+#include <gz/plugin/Register.hh>
 
 namespace gz
 {
@@ -85,8 +86,8 @@ protected:
 // private:
   // std::unique_ptr<point_cloud_transport::PointCloudTransport> pctnode_;  // TODO: Re-enable when point_cloud_transport is available
 
-// protected:
-  // image_transport::CameraPublisher color_pub_, ir1_pub_, ir2_pub_, depth_pub_;  // TODO: Re-enable when image_transport is available
+protected:
+  image_transport::Publisher color_pub_, ir1_pub_, ir2_pub_, depth_pub_;
   // point_cloud_transport::Publisher pointcloud_pub_;  // TODO: Re-enable when point_cloud_transport is available
 
   /// \brief ROS image messages

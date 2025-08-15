@@ -75,6 +75,9 @@ public:
   void PostUpdate(const gz::sim::UpdateInfo &_info,
                   const gz::sim::EntityComponentManager &_ecm) override;
 
+  /// \brief Initialize rendering sensors from sensor entities
+  bool InitializeRenderingSensors(const gz::sim::EntityComponentManager &_ecm);
+
   /// \brief Callback that publishes a received Depth Camera Frame as an
   /// ImageStamped
   /// message.

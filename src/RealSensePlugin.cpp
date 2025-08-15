@@ -52,7 +52,7 @@ RealSensePlugin::~RealSensePlugin() {}
 void RealSensePlugin::Configure(const gz::sim::Entity &_entity,
                                 const std::shared_ptr<const sdf::Element> &_sdf,
                                 gz::sim::EntityComponentManager &_ecm,
-                                gz::sim::EventManager &_eventMgr)
+                                gz::sim::EventManager &/*_eventMgr*/)
 {
   // Store references
   this->modelEntity = _entity;
@@ -192,11 +192,39 @@ void RealSensePlugin::Configure(const gz::sim::Entity &_entity,
 }
 
 /////////////////////////////////////////////////
-void RealSensePlugin::PostUpdate(const gz::sim::UpdateInfo &_info,
+void RealSensePlugin::PostUpdate(const gz::sim::UpdateInfo &/*_info*/,
                                  const gz::sim::EntityComponentManager &_ecm)
 {
-  // This is where we'll handle camera data updates in the new system
-  // The actual implementation will depend on getting access to the rendering sensors
+  // Check if we need to access sensor data
+  if (!this->depthCam || !this->colorCam || !this->ired1Cam || !this->ired2Cam) {
+    // Try to get rendering sensors if we haven't yet
+    if (!this->InitializeRenderingSensors(_ecm)) {
+      return; // Sensors not ready yet
+    }
+  }
+
+  // Process depth camera data
+  if (this->depthCam) {
+    this->OnNewDepthFrame();
+  }
+
+  // Process color and infrared cameras would be similar
+  // For now, just processing depth camera
+}
+
+/////////////////////////////////////////////////
+bool RealSensePlugin::InitializeRenderingSensors(const gz::sim::EntityComponentManager &_ecm)
+{
+  // This is a simplified implementation
+  // In a full implementation, we would need to:
+  // 1. Get the rendering scene
+  // 2. Find sensors by name
+  // 3. Get the rendering cameras from the sensors
+  
+  // For now, return false to indicate sensors are not ready
+  // This prevents the PostUpdate from trying to process uninitialized sensors
+  (void)_ecm; // Suppress unused parameter warning
+  return false;
 }
 
 /////////////////////////////////////////////////

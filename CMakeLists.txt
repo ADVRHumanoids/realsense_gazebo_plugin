@@ -26,10 +26,12 @@ find_package(gz-sensors8 REQUIRED)
 # Basic ROS packages that should be available
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(image_transport REQUIRED)
 
 set( dependencies
     rclcpp
     sensor_msgs
+    image_transport
 )
 
 include_directories(
