@@ -53,6 +53,10 @@ public:
                  gz::sim::EntityComponentManager &_ecm,
                  gz::sim::EventManager &_eventMgr) override;
 
+  // Documentation Inherited.
+  void PostUpdate(const gz::sim::UpdateInfo &_info,
+                  const gz::sim::EntityComponentManager &_ecm) override;
+
   /// \brief Callback that publishes a received Depth Camera Frame as an
   /// ImageStamped message.
 

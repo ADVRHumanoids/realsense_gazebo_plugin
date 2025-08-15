@@ -87,13 +87,67 @@ void GazeboRosRealsense::Configure(const gz::sim::Entity &_entity,
   RCLCPP_INFO(node_->get_logger(), "Loaded Realsense Gazebo ROS plugin.");
 }
 
-void GazeboRosRealsense::OnNewFrame(
-  const gz::rendering::CameraPtr /*cam*/,
-  gz::transport::Node::Publisher /*pub*/)
+/////////////////////////////////////////////////
+void GazeboRosRealsense::PostUpdate(const gz::sim::UpdateInfo &_info,
+                                   const gz::sim::EntityComponentManager &_ecm)
 {
-  // TODO: This method needs significant rework for gz-sim
-  // The ROS integration would need to be completely reimplemented
-  // for the new gz-sim architecture
+  // Call parent PostUpdate first
+  RealSensePlugin::PostUpdate(_info, _ecm);
+  
+  // For now, the image processing is triggered by sensor callbacks
+  // In a full implementation, we would process sensor data here
+  // and publish ROS messages at the appropriate rate
+}
+
+void GazeboRosRealsense::OnNewFrame(
+  const gz::rendering::CameraPtr cam,
+  gz::transport::Node::Publisher /*gzPub*/)
+{
+  if (!cam || !this->node_) {
+    return;
+  }
+
+  // Create ROS image message
+  auto imageMsg = std::make_unique<sensor_msgs::msg::Image>();
+  
+  // Set header info
+  imageMsg->header.stamp = this->node_->now();
+  
+  // Set image dimensions
+  imageMsg->width = cam->ImageWidth();
+  imageMsg->height = cam->ImageHeight();
+  
+  // Get image data using new API
+  gz::rendering::Image image = cam->CreateImage();
+  cam->Copy(image);
+  
+  // Set image format and data based on camera type
+  if (cam->ImageFormat() == gz::rendering::PF_R8G8B8) {
+    imageMsg->encoding = "rgb8";
+    imageMsg->step = cam->ImageWidth() * 3;
+    imageMsg->data.resize(imageMsg->step * imageMsg->height);
+    std::memcpy(imageMsg->data.data(), image.Data<unsigned char>(), image.MemorySize());
+    
+    // Publish color image
+    if (cam == this->colorCam) {
+      imageMsg->header.frame_id = cameraParamsMap_[COLOR_CAMERA_NAME].optical_frame;
+      this->color_pub_.publish(*imageMsg);
+    }
+  } else if (cam->ImageFormat() == gz::rendering::PF_L8) {
+    imageMsg->encoding = "mono8";
+    imageMsg->step = cam->ImageWidth() * 1;
+    imageMsg->data.resize(imageMsg->step * imageMsg->height);
+    std::memcpy(imageMsg->data.data(), image.Data<unsigned char>(), image.MemorySize());
+    
+    // Publish infrared images
+    if (cam == this->ired1Cam) {
+      imageMsg->header.frame_id = cameraParamsMap_[IRED1_CAMERA_NAME].optical_frame;
+      this->ir1_pub_.publish(*imageMsg);
+    } else if (cam == this->ired2Cam) {
+      imageMsg->header.frame_id = cameraParamsMap_[IRED2_CAMERA_NAME].optical_frame;
+      this->ir2_pub_.publish(*imageMsg);
+    }
+  }
 }
 
 // Referenced from gazebo_plugins
