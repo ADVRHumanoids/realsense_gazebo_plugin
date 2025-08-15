@@ -16,10 +16,9 @@
 
 #include <memory>
 #include <string>
+#include <thread>
 
-// #include <camera_info_manager/camera_info_manager.hpp>  // TODO: Re-enable when camera_info_manager is available
 #include <image_transport/image_transport.hpp>
-// #include <point_cloud_transport/point_cloud_transport.hpp>  // TODO: Re-enable when point_cloud_transport is available
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -28,13 +27,10 @@
 #include "realsense_gazebo_plugin/RealSensePlugin.hpp"
 #include <gz/plugin/Register.hh>
 
-namespace gz
-{
-namespace realsense_gazebo_plugin
-{
+namespace gz {
+namespace realsense_gazebo_plugin {
 /// \brief A plugin that simulates Real Sense camera streams.
-class GazeboRosRealsense : public RealSensePlugin
-{
+class GazeboRosRealsense : public RealSensePlugin {
   /// \brief Constructor.
 
 public:
@@ -64,22 +60,22 @@ public:
   virtual void OnNewDepthFrame();
 
   /// \brief Helper function to fill the pointcloud information
-  bool FillPointCloudHelper(
-    sensor_msgs::msg::PointCloud2 & point_cloud_msg,
-    uint32_t rows_arg, uint32_t cols_arg,
-    uint32_t step_arg, const void * data_arg);
+  bool FillPointCloudHelper(sensor_msgs::msg::PointCloud2 &point_cloud_msg,
+                            uint32_t rows_arg, uint32_t cols_arg,
+                            uint32_t step_arg, const void *data_arg);
 
   /// \brief Callback that publishes a received Camera Frame as an
   /// ImageStamped message.
 
 public:
-  virtual void OnNewFrame(
-    const gz::rendering::CameraPtr cam,
-    gz::transport::Node::Publisher pub) override;
+  virtual void OnNewFrame(const gz::rendering::CameraPtr cam,
+                          gz::transport::Node::Publisher pub) override;
 
-// protected:
-  // boost::shared_ptr<camera_info_manager::CameraInfoManager>
-  // camera_info_manager_;  // TODO: Re-enable when camera_info_manager is available
+  /// \brief Process and publish sensor data to ROS topics
+  void PublishSensorData(const gz::sim::EntityComponentManager &_ecm);
+
+  /// \brief Timer callback for publishing sensor data
+  void TimerCallback();
 
   /// \brief A pointer to the ROS node.
   ///  A node will be instantiated if it does not exist.
@@ -87,12 +83,10 @@ public:
 protected:
   rclcpp::Node::SharedPtr node_;
 
-// private:
-  // std::unique_ptr<point_cloud_transport::PointCloudTransport> pctnode_;  // TODO: Re-enable when point_cloud_transport is available
-
 protected:
   image_transport::Publisher color_pub_, ir1_pub_, ir2_pub_, depth_pub_;
-  // point_cloud_transport::Publisher pointcloud_pub_;  // TODO: Re-enable when point_cloud_transport is available
+  rclcpp::TimerBase::SharedPtr publish_timer_;
+  std::thread ros_spinner_thread_;
 
   /// \brief ROS image messages
 
@@ -100,5 +94,5 @@ protected:
   sensor_msgs::msg::Image image_msg_, depth_msg_;
   sensor_msgs::msg::PointCloud2 pointcloud_msg_;
 };
-}  // namespace realsense_gazebo_plugin
-}  // namespace gz
+} // namespace realsense_gazebo_plugin
+} // namespace gz

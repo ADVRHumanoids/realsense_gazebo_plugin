@@ -14,38 +14,33 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <map>
 
-#include <gz/sim/System.hh>
-#include <gz/sim/Entity.hh>
-#include <gz/sim/EntityComponentManager.hh>
-#include <gz/sim/EventManager.hh>
-#include <gz/sim/components.hh>
+#include <gz/msgs.hh>
 #include <gz/rendering/Camera.hh>
 #include <gz/rendering/DepthCamera.hh>
 #include <gz/sensors/CameraSensor.hh>
 #include <gz/sensors/DepthCameraSensor.hh>
+#include <gz/sim/Entity.hh>
+#include <gz/sim/EntityComponentManager.hh>
+#include <gz/sim/EventManager.hh>
+#include <gz/sim/System.hh>
+#include <gz/sim/components.hh>
 #include <gz/transport/Node.hh>
-#include <gz/msgs.hh>
 #include <sdf/sdf.hh>
 
-namespace gz
-{
-namespace realsense_gazebo_plugin
-{
+namespace gz {
+namespace realsense_gazebo_plugin {
 #define DEPTH_CAMERA_NAME "depth"
 #define COLOR_CAMERA_NAME "color"
 #define IRED1_CAMERA_NAME "ired1"
 #define IRED2_CAMERA_NAME "ired2"
 
-struct CameraParams
-{
-  CameraParams()
-  {
-  }
+struct CameraParams {
+  CameraParams() {}
 
   std::string topic_name;
   std::string camera_info_topic_name;
@@ -55,8 +50,7 @@ struct CameraParams
 /// \brief A plugin that simulates Real Sense camera streams.
 class RealSensePlugin : public gz::sim::System,
                         public gz::sim::ISystemConfigure,
-                        public gz::sim::ISystemPostUpdate
-{
+                        public gz::sim::ISystemPostUpdate {
   /// \brief Constructor.
 
 public:
@@ -85,9 +79,8 @@ public:
 
   /// \brief Callback that publishes a received Camera Frame as an
   /// ImageStamped message.
-  virtual void OnNewFrame(
-    const gz::rendering::CameraPtr cam,
-    gz::transport::Node::Publisher pub);
+  virtual void OnNewFrame(const gz::rendering::CameraPtr cam,
+                          gz::transport::Node::Publisher pub);
 
 protected:
   /// \brief Entity of the model containing the plugin.
@@ -145,5 +138,5 @@ protected:
   float rangeMinDepth_;
   float rangeMaxDepth_;
 };
-}  // namespace realsense_gazebo_plugin
-}  // namespace gz
+} // namespace realsense_gazebo_plugin
+} // namespace gz
