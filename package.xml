@@ -18,7 +18,7 @@
   <license>Apache 2.0</license>
 
   <url type="website">http://www.ros.org/wiki/RealSense</url>
-  <url type="bugtracker">https://github.com/intel-ros/realsense/issues</url>
+  <url type="bugtracker">https://github.com/ADVRHumanoids/realsense_gazebo_plugin/issues</url>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

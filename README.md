@@ -3,7 +3,9 @@
 This package is a Gazebo ROS plugin for the Intel D435 realsense camera.
 
 ## Note
-This branch is aimed for ROS2, if you are ROS1 user you can see the other branches(e.g melodic)
+- This branch is aimed for ROS2, if you are ROS1 user you can see the other branches(e.g melodic)
+- Check https://github.com/ADVRHumanoids/realsense_gazebo_description for usage. Be sure to check the correct ROS2 branch
+
  
 ## Acknowledgement
 
