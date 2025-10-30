@@ -26,6 +26,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include "realsense_gazebo_plugin/RealSensePlugin.hpp"
+#include <gazebo/rendering/Distortion.hh>
 
 namespace gazebo
 {

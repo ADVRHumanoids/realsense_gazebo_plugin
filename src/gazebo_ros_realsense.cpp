@@ -23,6 +23,9 @@ std::string extractCameraName(const std::string & name);
 sensor_msgs::msg::CameraInfo cameraInfo(
   const sensor_msgs::msg::Image & image,
   float horizontal_fov);
+sensor_msgs::msg::CameraInfo cameraInfo(
+  const sensor_msgs::msg::Image &image,
+  const gazebo::rendering::CameraPtr cam);
 }  // namespace
 
 namespace gazebo
@@ -129,7 +132,7 @@ void GazeboRosRealsense::OnNewFrame(
 
   // publish to ROS
   auto camera_info_msg =
-    cameraInfo(this->image_msg_, cameras.at(camera_id)->HFOV().Radian());
+    cameraInfo(this->image_msg_, cameras.at(camera_id));
   image_pub->publish(this->image_msg_, camera_info_msg);
 }
 
@@ -255,7 +258,7 @@ void GazeboRosRealsense::OnNewDepthFrame()
 
   // publish to ROS
   auto depth_info_msg =
-    cameraInfo(this->depth_msg_, this->depthCam->HFOV().Radian());
+    cameraInfo(this->depth_msg_, this->depthCam);
   this->depth_pub_.publish(this->depth_msg_, depth_info_msg);
 
   if (pointCloud_ && this->pointcloud_pub_.getNumSubscribers() > 0) {
@@ -312,6 +315,12 @@ sensor_msgs::msg::CameraInfo cameraInfo(
   info_msg.k[5] = info_msg.height * 0.5;
   info_msg.k[8] = 1.;
 
+  info_msg.d.push_back(0);
+  info_msg.d.push_back(0);
+  info_msg.d.push_back(0);
+  info_msg.d.push_back(0);
+  info_msg.d.push_back(0);
+
   info_msg.p[0] = info_msg.k[0];
   info_msg.p[5] = info_msg.k[4];
   info_msg.p[2] = info_msg.k[2];
@@ -322,4 +331,55 @@ sensor_msgs::msg::CameraInfo cameraInfo(
 
   return info_msg;
 }
+
+sensor_msgs::msg::CameraInfo cameraInfo(
+  const sensor_msgs::msg::Image &image,
+  const gazebo::rendering::CameraPtr cam) 
+{
+  sensor_msgs::msg::CameraInfo info_msg;
+
+  info_msg.header = image.header;
+  info_msg.height = cam->ImageHeight();
+  info_msg.width = cam->ImageWidth();
+
+  //TODO: these methods have been removed with gazebo versions for ros2. How to get the actual intrinsic that gazebo is using now?
+  // info_msg.k[0] = cam->ImageFocalLengthX();
+  // info_msg.k[4] = cam->ImageFocalLengthY();
+  // info_msg.k[2] = cam->ImageOpticalCenterX();
+  // info_msg.k[5] = cam->ImageOpticalCenterY();
+  // info_msg.k[8] = 1.;
+  float focal = 0.5 * image.width / tan(0.5 * cam->HFOV().Radian());
+
+  info_msg.k[0] = focal;
+  info_msg.k[4] = focal;
+  info_msg.k[2] = info_msg.width * 0.5;
+  info_msg.k[5] = info_msg.height * 0.5;
+  info_msg.k[8] = 1.;
+
+  if (cam->LensDistortion() != nullptr) {
+    info_msg.distortion_model = "plumb_bob";
+    info_msg.d.push_back(cam->LensDistortion()->K1());
+    info_msg.d.push_back(cam->LensDistortion()->K2());
+    info_msg.d.push_back(cam->LensDistortion()->P1());
+    info_msg.d.push_back(cam->LensDistortion()->P2());
+    info_msg.d.push_back(cam->LensDistortion()->K3());
+  } else {
+    info_msg.d = {0, 0, 0, 0, 0};  
+  }
+
+  info_msg.r[0] = 1.0;
+  info_msg.r[4] = 1.0; 
+  info_msg.r[8] = 1.0;
+
+  info_msg.p[0] = info_msg.k[0];
+  info_msg.p[5] = info_msg.k[4];
+  info_msg.p[2] = info_msg.k[2];
+  info_msg.p[6] = info_msg.k[5];
+  info_msg.p[10] = info_msg.k[8];
+
+  //    info_msg.roi.do_rectify = true;
+
+  return info_msg;
+}
+
 }  // namespace
