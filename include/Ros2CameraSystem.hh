@@ -45,6 +45,7 @@
 namespace custom
 {
   class Ros2Camera;
+  class Ros2DepthCamera;
 
   /// \brief Example showing how to tie a custom sensor, in this case an
   /// odometer, into simulation
@@ -89,9 +90,9 @@ namespace custom
     /// \brief Render-thread teardown callback.
     private: void OnRenderTeardown();
 
-    /// \brief Active custom camera sensors keyed by entity.
+    /// \brief Active custom rendering sensors keyed by entity.
     private: std::unordered_map<gz::sim::Entity,
-        std::shared_ptr<Ros2Camera>> entitySensorMap;
+        std::shared_ptr<gz::sensors::Sensor>> entitySensorMap;
 
     /// \brief Synchronizes sim-thread bookkeeping with render-thread updates.
     private: std::mutex mutex;
@@ -111,4 +112,5 @@ namespace custom
 
   };
 }
-#endif
+
+#endif // ROS2CAMERASYSTEM_HH_

@@ -29,8 +29,9 @@
 #include <gz/sim/components/Sensor.hh>
 #include <gz/sim/rendering/Events.hh>
 
-#include "realsense_gz_plugin/Ros2Camera.hh"
-#include "realsense_gz_plugin/Ros2CameraSystem.hh"
+#include "Ros2CameraSystem.hh"
+#include "sensors/Ros2Camera.hh"
+#include "sensors/Ros2DepthCamera.hh"
 
 using namespace custom;
 
@@ -39,6 +40,8 @@ namespace
 
 constexpr const char *kRos2CameraType = "Ros2Camera";
 constexpr const char *kRos2CameraTypeQualified = "custom::Ros2Camera";
+constexpr const char *kRos2DepthCameraType = "Ros2DepthCamera";
+constexpr const char *kRos2DepthCameraTypeQualified = "custom::Ros2DepthCamera";
 
 bool IsRos2CameraType(const sdf::Sensor &_sensor)
 {
@@ -48,7 +51,15 @@ bool IsRos2CameraType(const sdf::Sensor &_sensor)
   return type == kRos2CameraType || type == kRos2CameraTypeQualified;
 }
 
-void EnsureScene(custom::Ros2Camera *_sensor)
+bool IsRos2DepthCameraType(const sdf::Sensor &_sensor)
+{
+  const auto type = gz::sensors::customType(_sensor);
+  gzdbg << "Ros2CameraSystem IsRos2DepthCameraType: name=[" << _sensor.Name()
+        << "] gz:type=[" << type << "]" << std::endl;
+  return type == kRos2DepthCameraType || type == kRos2DepthCameraTypeQualified;
+}
+
+void EnsureScene(gz::sensors::RenderingSensor *_sensor)
 {
   if (!_sensor || _sensor->Scene())
   {
@@ -148,10 +159,11 @@ void Ros2CameraSystem::PreUpdate(const gz::sim::UpdateInfo &,
         gzdbg << "Ros2CameraSystem discovered CustomSensor entity [" << _entity
               << "] with gz:type [" << customType << "]" << std::endl;
 
-        if (!IsRos2CameraType(rawData))
+        if (!IsRos2CameraType(rawData) && !IsRos2DepthCameraType(rawData))
         {
           gzdbg << "Ros2CameraSystem skipping CustomSensor entity [" << _entity
-                << "] because it is not a Ros2Camera" << std::endl;
+                << "] because it is not a supported custom camera sensor"
+                << std::endl;
           return true;
         }
 
@@ -161,36 +173,67 @@ void Ros2CameraSystem::PreUpdate(const gz::sim::UpdateInfo &,
         sdf::Sensor data = rawData;
         data.SetName(sensorScopedName);
 
+        const bool isDepthCamera = IsRos2DepthCameraType(rawData);
+        const std::string sensorKind = isDepthCamera ? "Ros2DepthCamera"
+                                                     : "Ros2Camera";
         const std::string defaultTopic =
-            gz::sim::scopedName(_entity, _ecm) + "/Ros2Camera";
+            gz::sim::scopedName(_entity, _ecm) + "/" + sensorKind;
         if (data.Topic().empty())
         {
           data.SetTopic(defaultTopic);
         }
 
-        gzdbg << "Ros2CameraSystem creating Ros2Camera [" << sensorScopedName
+        gzdbg << "Ros2CameraSystem creating " << sensorKind << " ["
+              << sensorScopedName
               << "] on topic [" << data.Topic() << "]" << std::endl;
 
         gz::sensors::SensorFactory sensorFactory;
-        std::unique_ptr<custom::Ros2Camera> sensor;
+        std::shared_ptr<gz::sensors::Sensor> sensor;
         auto sensorElem = PrepareSensorElement(rawData, sensorScopedName,
             defaultTopic);
-        if (sensorElem)
+        if (isDepthCamera)
         {
-          gzdbg << "Ros2CameraSystem creating sensor from raw SDF element for ["
-                << sensorScopedName << "]" << std::endl;
-          sensor = sensorFactory.CreateSensor<custom::Ros2Camera>(sensorElem);
+          std::unique_ptr<custom::Ros2DepthCamera> depthSensor;
+          if (sensorElem)
+          {
+            gzdbg << "Ros2CameraSystem creating depth sensor from raw SDF"
+                  << " element for [" << sensorScopedName << "]" << std::endl;
+            depthSensor =
+                sensorFactory.CreateSensor<custom::Ros2DepthCamera>(sensorElem);
+          }
+          else
+          {
+            gzdbg << "Ros2CameraSystem falling back to sdf::Sensor creation"
+                  << " for depth sensor [" << sensorScopedName << "] because"
+                  << " the original SDF element is unavailable" << std::endl;
+            depthSensor =
+                sensorFactory.CreateSensor<custom::Ros2DepthCamera>(data);
+          }
+          sensor = std::shared_ptr<gz::sensors::Sensor>(std::move(depthSensor));
         }
         else
         {
-          gzdbg << "Ros2CameraSystem falling back to sdf::Sensor creation for ["
-                << sensorScopedName << "] because the original SDF element is"
-                << " unavailable" << std::endl;
-          sensor = sensorFactory.CreateSensor<custom::Ros2Camera>(data);
+          std::unique_ptr<custom::Ros2Camera> colorSensor;
+          if (sensorElem)
+          {
+            gzdbg << "Ros2CameraSystem creating sensor from raw SDF element"
+                  << " for [" << sensorScopedName << "]" << std::endl;
+            colorSensor =
+                sensorFactory.CreateSensor<custom::Ros2Camera>(sensorElem);
+          }
+          else
+          {
+            gzdbg << "Ros2CameraSystem falling back to sdf::Sensor creation"
+                  << " for [" << sensorScopedName << "] because the original"
+                  << " SDF element is unavailable" << std::endl;
+            colorSensor = sensorFactory.CreateSensor<custom::Ros2Camera>(data);
+          }
+          sensor = std::shared_ptr<gz::sensors::Sensor>(std::move(colorSensor));
         }
         if (!sensor)
         {
-          gzerr << "Failed to create Ros2Camera [" << sensorScopedName << "]"
+          gzerr << "Failed to create " << sensorKind << " ["
+                << sensorScopedName << "]"
                 << " from custom sensor type [" << customType << "]"
                 << std::endl;
           return true;
@@ -203,18 +246,22 @@ void Ros2CameraSystem::PreUpdate(const gz::sim::UpdateInfo &,
           sensor->SetParent(parentNameComp->Data());
         }
 
-        EnsureScene(sensor.get());
+        auto renderingSensor =
+            std::dynamic_pointer_cast<gz::sensors::RenderingSensor>(sensor);
+        if (renderingSensor)
+        {
+          EnsureScene(renderingSensor.get());
+        }
 
         _ecm.CreateComponent(_entity,
             gz::sim::components::SensorTopic(sensor->Topic()));
 
         {
           std::lock_guard<std::mutex> lock(this->mutex);
-          this->entitySensorMap[_entity] = std::shared_ptr<Ros2Camera>(
-              std::move(sensor));
+          this->entitySensorMap[_entity] = sensor;
         }
 
-        gzdbg << "Ros2CameraSystem created Ros2Camera for entity ["
+        gzdbg << "Ros2CameraSystem created " << sensorKind << " for entity ["
               << _entity << "]" << std::endl;
         return true;
       });
@@ -245,7 +292,6 @@ void Ros2CameraSystem::RemoveSensorEntities(
         auto it = this->entitySensorMap.find(_entity);
         if (it != this->entitySensorMap.end())
         {
-          it->second->SetScene(nullptr);
           this->entitySensorMap.erase(it);
         }
         return true;
@@ -259,10 +305,7 @@ void Ros2CameraSystem::ClearSensors()
   for (auto &[entity, sensor] : this->entitySensorMap)
   {
     (void)entity;
-    if (sensor)
-    {
-      sensor->SetScene(nullptr);
-    }
+    (void)sensor;
   }
 
   this->entitySensorMap.clear();
@@ -271,7 +314,7 @@ void Ros2CameraSystem::ClearSensors()
 //////////////////////////////////////////////////
 void Ros2CameraSystem::OnPreRender()
 {
-  std::vector<std::shared_ptr<Ros2Camera>> sensors;
+  std::vector<std::shared_ptr<gz::sensors::Sensor>> sensors;
   std::chrono::steady_clock::duration now;
   bool isPaused = true;
 
@@ -294,19 +337,21 @@ void Ros2CameraSystem::OnPreRender()
 
   for (const auto &sensor : sensors)
   {
-    EnsureScene(sensor.get());
-    if (!sensor->Scene())
+    auto renderingSensor =
+        std::dynamic_pointer_cast<gz::sensors::RenderingSensor>(sensor);
+    if (!renderingSensor)
     {
-      gzdbg << "Ros2CameraSystem OnPreRender: sensor [" << sensor->Name()
-            << "] still has no scene, skipping update" << std::endl;
+      gzerr << "Ros2CameraSystem OnPreRender: failed to cast sensor ["
+            << sensor->Name() << "] to gz::sensors::RenderingSensor"
+            << std::endl;
       continue;
     }
 
-    auto baseSensor = std::dynamic_pointer_cast<gz::sensors::Sensor>(sensor);
-    if (!baseSensor)
+    EnsureScene(renderingSensor.get());
+    if (!renderingSensor->Scene())
     {
-      gzerr << "Ros2CameraSystem OnPreRender: failed to cast sensor ["
-            << sensor->Name() << "] to gz::sensors::Sensor" << std::endl;
+      gzdbg << "Ros2CameraSystem OnPreRender: sensor [" << sensor->Name()
+            << "] still has no scene, skipping update" << std::endl;
       continue;
     }
 
@@ -314,7 +359,7 @@ void Ros2CameraSystem::OnPreRender()
           << sensor->Name() << "] at sim time ["
           << std::chrono::duration_cast<std::chrono::milliseconds>(now).count()
           << "ms]" << std::endl;
-    baseSensor->Update(now, false);
+    sensor->Update(now, false);
   }
 }
 

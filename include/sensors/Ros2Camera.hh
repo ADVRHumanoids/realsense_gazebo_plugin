@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ROS2_CAMERA_HH
+#define ROS2_CAMERA_HH
 
 #include <sdf/Sensor.hh>
 #include <gz/sensors/CameraSensor.hh>
@@ -22,3 +23,5 @@ public:
 };
 
 }  // namespace custom
+
+#endif  // ROS2_CAMERA_HH

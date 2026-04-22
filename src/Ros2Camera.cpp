@@ -1,8 +1,6 @@
-#include "realsense_gz_plugin/Ros2Camera.hh"
+#include "sensors/Ros2Camera.hh"
 
 #include <gz/common/Console.hh>
-#include <gz/plugin/Register.hh>
-
 namespace custom
 {
 
@@ -67,7 +65,6 @@ bool ToCameraSensor(const sdf::Sensor &_input, sdf::Sensor &_cameraSensor)
 
 }  // namespace
 
-
 bool Ros2Camera::Load(const sdf::Sensor &_sdf)
 {
   gzdbg << "Ros2Camera::Load(sdf::Sensor) name=[" << _sdf.Name()
@@ -89,7 +86,8 @@ bool Ros2Camera::Load(const sdf::Sensor &_sdf)
   }
 
   gzdbg << "Ros2Camera successfully loaded [" << cameraSensor.Name()
-        << "] topic=[" << this->Topic() << "]" << std::endl;
+        << "] topic=[" << this->Topic() << "] frame_id=["
+        << this->FrameId() << "]" << std::endl;
   return true;
 }
 
@@ -127,7 +125,3 @@ bool Ros2Camera::Load(sdf::ElementPtr _sdf)
 }
 
 } // namespace custom
-
-GZ_ADD_PLUGIN(custom::Ros2Camera, gz::sensors::Sensor)
-GZ_ADD_PLUGIN_ALIAS(custom::Ros2Camera, "Ros2Camera")
-GZ_ADD_PLUGIN_ALIAS(custom::Ros2Camera, "custom::Ros2Camera")
