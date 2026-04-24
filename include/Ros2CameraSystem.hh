@@ -91,13 +91,17 @@ namespace custom
     /// \brief Render-thread teardown callback.
     private: void OnRenderTeardown();
 
-    /// \brief Active custom rendering sensors keyed by entity.
-    private: std::unordered_map<gz::sim::Entity,
-        std::shared_ptr<gz::sensors::Sensor>> entitySensorMap;
+    /// \brief Render-thread snapshot for a tracked sensor entity.
+    private: struct TrackedSensorState
+    {
+      std::shared_ptr<gz::sensors::Sensor> sensor;
+      gz::math::Pose3d pose;
+      bool poseReady{false};
+    };
 
-    /// \brief Latest world pose for each tracked sensor entity.
-    private: std::unordered_map<gz::sim::Entity, gz::math::Pose3d>
-        entityPoseMap;
+    /// \brief Active custom rendering sensors and their latest poses.
+    private: std::unordered_map<gz::sim::Entity, TrackedSensorState>
+        trackedSensorMap;
 
     /// \brief Synchronizes sim-thread bookkeeping with render-thread updates.
     private: std::mutex mutex;

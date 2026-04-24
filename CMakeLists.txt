@@ -20,25 +20,20 @@ find_package(gz-cmake3 REQUIRED)
 find_package(gz-plugin2  REQUIRED)
 find_package(gz-rendering8 REQUIRED)
 find_package(gz-sim8     REQUIRED)
-find_package(gz-sensors8 REQUIRED COMPONENTS camera depth_camera)
+find_package(gz-sensors8 REQUIRED COMPONENTS camera depth_camera rgbd_camera)
 
 # ---------------------------------------------------------------------------
 # Shared library
 # ---------------------------------------------------------------------------
 add_library(ros2_gz_camera SHARED
   src/plugin.cpp
-  src/Ros2Camera.cpp
-  src/Ros2DepthCamera.cpp
-  # src/Ros2CameraSystem.cpp
-  # src/realsense_gz_plugin.cpp
+  src/sensors/Ros2Camera.cpp
+  src/sensors/Ros2DepthCamera.cpp
+  src/sensors/Ros2RgbdCamera.cpp
 )
 
 add_library(Ros2CameraSystem SHARED
-  # src/ros2_sensor_config.cpp
-  # src/Ros2Camera.cpp
-  # src/ros2_depth_camera_sensor.cpp
   src/Ros2CameraSystem.cpp
-  # src/realsense_gz_plugin.cpp
 )
 
 target_include_directories(ros2_gz_camera PUBLIC
@@ -56,6 +51,7 @@ target_link_libraries(ros2_gz_camera
   gz-sensors8::gz-sensors8
   gz-sensors8::gz-sensors8-camera
   gz-sensors8::gz-sensors8-depth_camera
+  gz-sensors8::gz-sensors8-rgbd_camera
 )
 
 target_link_libraries(Ros2CameraSystem

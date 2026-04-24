@@ -52,6 +52,8 @@ namespace custom
 using namespace gz;
 using namespace gz::sensors;
 
+constexpr const char *kPublishPointCloudElement = "publish_pointcloud";
+
 
 //////////////////////////////////////////////////
 /// \brief Convert the SDF element to a sdf::Sensor object and ensure it is of type camera. This is used to convert the custom SDF element into a form
@@ -198,6 +200,9 @@ class Ros2DepthCameraPrivate
 
   /// \brief publisher to publish point cloud
   public: gz::transport::Node::Publisher pointPub;
+
+  /// \brief True if pointcloud generation/publication is allowed by SDF.
+  public: bool publishPointCloud = true;
 };
 
 //////////////////////////////////////////////////
@@ -302,6 +307,12 @@ bool Ros2DepthCamera::Load(sdf::ElementPtr _sdf)
         << _sdf->Get<std::string>("name", "").first << "] type=["
         << _sdf->Get<std::string>("type", "").first << "]" << std::endl;
 
+  if (_sdf->HasElement(kPublishPointCloudElement))
+  {
+    this->dataPtr->publishPointCloud =
+        _sdf->Get<bool>(kPublishPointCloudElement);
+  }
+
   sdf::Sensor sensor;
   if (!ToDepthCameraSensor(_sdf, sensor))
   {
@@ -369,19 +380,28 @@ bool Ros2DepthCamera::Load(const sdf::Sensor &_sdf)
   if (!this->AdvertiseInfo())
     return false;
 
-  // Create the point cloud publisher
-  this->dataPtr->pointPub =
-      this->dataPtr->node.Advertise<gz::msgs::PointCloudPacked>(
-          this->Topic() + "/points");
-  if (!this->dataPtr->pointPub)
+  if (this->dataPtr->publishPointCloud)
   {
-    gzerr << "Unable to create publisher on topic["
-      << this->Topic() + "/points" << "].\n";
-    return false;
-  }
+    // Create the point cloud publisher only when pointclouds are enabled.
+    this->dataPtr->pointPub =
+        this->dataPtr->node.Advertise<gz::msgs::PointCloudPacked>(
+            this->Topic() + "/points");
+    if (!this->dataPtr->pointPub)
+    {
+      gzerr << "Unable to create publisher on topic["
+        << this->Topic() + "/points" << "].\n";
+      return false;
+    }
 
-  gzdbg << "Points for [" << this->Name() << "] advertised on ["
-         << this->Topic() << "/points]" << std::endl;
+    gzdbg << "Points for [" << this->Name() << "] advertised on ["
+           << this->Topic() << "/points]" << std::endl;
+  }
+  else
+  {
+    gzdbg << "Pointcloud topic disabled for [" << this->Name()
+          << "] by <publish_pointcloud>false</publish_pointcloud>"
+          << std::endl;
+  }
 
   if (this->Scene())
   {
@@ -796,7 +816,8 @@ bool Ros2DepthCamera::HasDepthConnections() const
 //////////////////////////////////////////////////
 bool Ros2DepthCamera::HasPointConnections() const
 {
-  return this->dataPtr->pointPub && this->dataPtr->pointPub.HasConnections();
+  return this->dataPtr->publishPointCloud && this->dataPtr->pointPub &&
+         this->dataPtr->pointPub.HasConnections();
 }
 
 }  // namespace custom
