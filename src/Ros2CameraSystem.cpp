@@ -275,6 +275,11 @@ void Ros2CameraSystem::PostUpdate(const gz::sim::UpdateInfo &_info,
     std::lock_guard<std::mutex> lock(this->mutex);
     this->simTime = _info.simTime;
     this->paused = _info.paused;
+    for (auto &[entity, sensor] : this->entitySensorMap)
+    {
+      (void)sensor;
+      this->entityPoseMap[entity] = gz::sim::worldPose(entity, _ecm);
+    }
   }
 
   this->RemoveSensorEntities(_ecm);
@@ -294,6 +299,7 @@ void Ros2CameraSystem::RemoveSensorEntities(
         {
           this->entitySensorMap.erase(it);
         }
+        this->entityPoseMap.erase(_entity);
         return true;
       });
 }
@@ -309,12 +315,19 @@ void Ros2CameraSystem::ClearSensors()
   }
 
   this->entitySensorMap.clear();
+  this->entityPoseMap.clear();
 }
 
 //////////////////////////////////////////////////
 void Ros2CameraSystem::OnPreRender()
 {
-  std::vector<std::shared_ptr<gz::sensors::Sensor>> sensors;
+  struct SensorState
+  {
+    std::shared_ptr<gz::sensors::Sensor> sensor;
+    gz::math::Pose3d pose;
+  };
+
+  std::vector<SensorState> sensors;
   std::chrono::steady_clock::duration now;
   bool isPaused = true;
 
@@ -325,8 +338,16 @@ void Ros2CameraSystem::OnPreRender()
     sensors.reserve(this->entitySensorMap.size());
     for (const auto &[entity, sensor] : this->entitySensorMap)
     {
-      (void)entity;
-      sensors.push_back(sensor);
+      auto poseIt = this->entityPoseMap.find(entity);
+      if (poseIt == this->entityPoseMap.end())
+      {
+        // Pose not yet initialized by PostUpdate - skip this frame
+        gzdbg << "Ros2CameraSystem OnPreRender: sensor ["
+              << sensor->Name()
+              << "] pose not yet available, skipping" << std::endl;
+        continue;
+      }
+      sensors.push_back({sensor, poseIt->second});
     }
   }
 
@@ -335,14 +356,16 @@ void Ros2CameraSystem::OnPreRender()
     return;
   }
 
-  for (const auto &sensor : sensors)
+  for (const auto &sensorState : sensors)
   {
     auto renderingSensor =
-        std::dynamic_pointer_cast<gz::sensors::RenderingSensor>(sensor);
+        std::dynamic_pointer_cast<gz::sensors::RenderingSensor>(
+            sensorState.sensor);
     if (!renderingSensor)
     {
       gzerr << "Ros2CameraSystem OnPreRender: failed to cast sensor ["
-            << sensor->Name() << "] to gz::sensors::RenderingSensor"
+            << sensorState.sensor->Name()
+            << "] to gz::sensors::RenderingSensor"
             << std::endl;
       continue;
     }
@@ -350,16 +373,19 @@ void Ros2CameraSystem::OnPreRender()
     EnsureScene(renderingSensor.get());
     if (!renderingSensor->Scene())
     {
-      gzdbg << "Ros2CameraSystem OnPreRender: sensor [" << sensor->Name()
+      gzdbg << "Ros2CameraSystem OnPreRender: sensor ["
+            << sensorState.sensor->Name()
             << "] still has no scene, skipping update" << std::endl;
       continue;
     }
 
+    renderingSensor->SetPose(sensorState.pose);
+
     gzdbg << "Ros2CameraSystem OnPreRender: updating sensor ["
-          << sensor->Name() << "] at sim time ["
+          << sensorState.sensor->Name() << "] at sim time ["
           << std::chrono::duration_cast<std::chrono::milliseconds>(now).count()
           << "ms]" << std::endl;
-    sensor->Update(now, false);
+    sensorState.sensor->Update(now, false);
   }
 }
 

@@ -23,6 +23,7 @@
 #include <unordered_map>
 
 #include <gz/common/Event.hh>
+#include <gz/math/Pose3.hh>
 #include <gz/sensors/Sensor.hh>
 #include <gz/sim/System.hh>
 
@@ -93,6 +94,10 @@ namespace custom
     /// \brief Active custom rendering sensors keyed by entity.
     private: std::unordered_map<gz::sim::Entity,
         std::shared_ptr<gz::sensors::Sensor>> entitySensorMap;
+
+    /// \brief Latest world pose for each tracked sensor entity.
+    private: std::unordered_map<gz::sim::Entity, gz::math::Pose3d>
+        entityPoseMap;
 
     /// \brief Synchronizes sim-thread bookkeeping with render-thread updates.
     private: std::mutex mutex;

@@ -636,6 +636,11 @@ bool Ros2DepthCamera::Update(
     return false;
   }
 
+  // Ros2CameraSystem drives this custom sensor from world poses. Keep the
+  // owned rendering camera in sync before Render(), otherwise it stays at the
+  // pose used when CreateCamera() first attached it to the scene root.
+  this->dataPtr->depthCamera->SetLocalPose(this->Pose());
+
   if (this->HasPointConnections() && !this->dataPtr->pointCloudConnection)
   {
     this->dataPtr->pointCloudConnection =

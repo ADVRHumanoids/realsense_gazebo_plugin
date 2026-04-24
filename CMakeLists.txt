@@ -63,7 +63,6 @@ target_link_libraries(Ros2CameraSystem
   gz-rendering8::gz-rendering8
   gz-sim8::gz-sim8
   ros2_gz_camera
-  # gz-sensors8::gz-sensors8-depth_camera
 )
 
 # ---------------------------------------------------------------------------
