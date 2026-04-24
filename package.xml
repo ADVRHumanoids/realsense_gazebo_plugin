@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>realsense_gz_plugin</name>
+  <name>realsense_gazebo_plugin</name>
   <version>0.1.0</version>
   <description>
     Custom Gazebo Harmonic RealSense sensor package for gz-sim8 and
@@ -9,7 +9,7 @@
     with optional pointcloud publication and ROS-friendly frame handling.
   </description>
 
-  <maintainer email="toridebraus@gmail.com">Davide Torielli</maintainer>
+  <maintainer email="alessio.lovato@iit.it">Alessio Lovato</maintainer>
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

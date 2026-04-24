@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(realsense_gz_plugin)
+project(realsense_gazebo_plugin)
 
 # ---------------------------------------------------------------------------
 # C++ standard
@@ -84,7 +84,7 @@ install(
 )
 
 ament_environment_hooks(
-  "${CMAKE_CURRENT_SOURCE_DIR}/env-hooks/realsense_gz_plugin.dsv.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/env-hooks/realsense_gazebo_plugin.dsv.in"
 )
 
 ament_package()

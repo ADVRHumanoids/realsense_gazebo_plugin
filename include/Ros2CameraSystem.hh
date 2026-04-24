@@ -35,7 +35,7 @@
 /// ------------
 /// Add to your world SDF:
 ///
-///   <plugin filename="librealsense_gz_plugin.so"
+///   <plugin filename="librealsense_gazebo_plugin.so"
 ///           name="custom::Ros2CustomSensorSystem"/>
 ///
 /// The system replaces both Camera and DepthCamera typed sensor entities.
