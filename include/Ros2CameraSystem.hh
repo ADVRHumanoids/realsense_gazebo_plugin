@@ -35,13 +35,12 @@
 /// ------------
 /// Add to your world SDF:
 ///
-///   <plugin filename="librealsense_gazebo_plugin.so"
+///   <plugin filename="Ros2CameraSystem"
 ///           name="custom::Ros2CustomSensorSystem"/>
 ///
-/// The system replaces both Camera and DepthCamera typed sensor entities.
-/// Sensors that carry a <ros2><publish_frame_id> child element have their
-/// outgoing header frame overridden; sensors without that element behave
-/// identically to the Gazebo defaults.
+/// The system loads both Ros2Camera and Ros2DepthCamera and Ros2RgbdCamera
+/// typed sensor entities.
+
 
 namespace custom
 {
