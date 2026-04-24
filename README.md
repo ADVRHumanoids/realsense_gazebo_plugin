@@ -1,4 +1,4 @@
-# realsense_gz_plugin
+# realsense_gazebo_plugin
 
 > Custom Gazebo Harmonic sensor layer for Intel RealSense cameras, targeting **ROS 2 Jazzy** and the **gz-sim8 / gz-sensors8 / gz-rendering8** stack.
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-`realsense_gz_plugin` provides three custom rendering sensors and the system plugin required to drive them inside Gazebo Sim:
+`realsense_gazebo_plugin` provides three custom rendering sensors and the system plugin required to drive them inside Gazebo Sim:
 
 | Sensor type | `gz:type` value | Purpose |
 |---|---|---|
@@ -49,11 +49,11 @@ Because Gazebo Sim does not manage custom rendering sensors end-to-end, this pac
 ## Repository structure
 
 ```text
-realsense_gz_plugin/
+realsense_gazebo_plugin/
 ├── CMakeLists.txt
 ├── package.xml
 ├── env-hooks/
-│   └── realsense_gz_plugin.dsv.in       # Env-hook: prepends PATHs of libraries
+│   └── realsense_gazebo_plugin.dsv.in       # Env-hook: prepends PATHs of libraries
 ├── include/
 │   ├── sensors/
 │   │   ├── Ros2Camera.hh
@@ -108,7 +108,7 @@ The upstream reference implementation for this pattern is [`gz::sensors::Doppler
 ## Build
 
 ```bash
-colcon build --packages-select realsense_gz_plugin
+colcon build --packages-select realsense_gazebo_plugin
 source install/setup.bash
 ```
 
